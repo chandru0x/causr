@@ -98,6 +98,13 @@ public class LogConsumer {
 	    ServiceMetrics metrics =
 	            metricsRegistry.getMetrics(serviceName);
 
+	    metrics.getLastLogTimestampMs().set(
+	            Math.max(
+	                    metrics.getLastLogTimestampMs().get(),
+	                    tsMillis
+	            )
+	    );
+
 	    metrics.getTotalRequests()
 	           .incrementAndGet();
 

@@ -21,8 +21,9 @@ public class MetricsDto {
 	private long errorsPerSecond;
 
 	private long timestamp;
-    
-    
+
+	/** Most recent log timestamp for this service (0 = not applicable, e.g. fleet). */
+	private long lastLogTimestampMs;
 
 	public String getService() {
 		return service;
@@ -102,6 +103,14 @@ public class MetricsDto {
 
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
+	}
+
+	public long getLastLogTimestampMs() {
+		return lastLogTimestampMs;
+	}
+
+	public void setLastLogTimestampMs(long lastLogTimestampMs) {
+		this.lastLogTimestampMs = lastLogTimestampMs;
 	}
 
 	@Override

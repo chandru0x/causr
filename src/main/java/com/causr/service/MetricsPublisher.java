@@ -12,6 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.causr.dto.AnomalyDto;
 import com.causr.dto.FleetServicesDto;
 import com.causr.dto.LatencySample;
 import com.causr.dto.MetricsDto;
@@ -44,6 +45,10 @@ public class MetricsPublisher {
 
 	private final SimpMessagingTemplate messagingTemplate;
 
+	private final AnomalyEngine anomalyEngine;
+
+	private final AnomalyPublisher anomalyPublisher;
+
 	/** Previous fleet cumulative totals for per-second delta (chart / ingest rate). */
 	private final AtomicLong lastFleetTotal = new AtomicLong(0L);
 
@@ -54,10 +59,14 @@ public class MetricsPublisher {
 
 	public MetricsPublisher(
 			MetricsRegistry metricsRegistry,
-			SimpMessagingTemplate messagingTemplate) {
+			SimpMessagingTemplate messagingTemplate,
+			AnomalyEngine anomalyEngine,
+			AnomalyPublisher anomalyPublisher) {
 
 		this.metricsRegistry = metricsRegistry;
 		this.messagingTemplate = messagingTemplate;
+		this.anomalyEngine = anomalyEngine;
+		this.anomalyPublisher = anomalyPublisher;
 	}
 
 	@Scheduled(fixedRate = 1000)
@@ -163,6 +172,8 @@ public class MetricsPublisher {
 				dto
 		);
 
+		publishAnomalies(anomalyEngine.detect(dto));
+
 		serviceLastTotals.keySet().retainAll(all.keySet());
 
 		List<ServiceFleetRowDto> fleetRows = new ArrayList<>();
@@ -215,6 +226,24 @@ public class MetricsPublisher {
 			row.setActiveIncidents(incidents);
 
 			fleetRows.add(row);
+
+			MetricsDto svcMetrics = new MetricsDto();
+
+			svcMetrics.setService(serviceName);
+
+			svcMetrics.setErrorRate(rowErrorRate);
+
+			svcMetrics.setP99Latency(rowP99);
+
+			svcMetrics.setIngestRate((double) deltaLines);
+
+			svcMetrics.setLastLogTimestampMs(
+					metrics.getLastLogTimestampMs().get()
+			);
+
+			publishAnomalies(
+					anomalyEngine.detect(svcMetrics)
+			);
 		}
 
 		fleetRows.sort(
@@ -230,6 +259,14 @@ public class MetricsPublisher {
 		fleetDto.setServices(fleetRows);
 
 		messagingTemplate.convertAndSend(DESTINATION_FLEET_SERVICES, fleetDto);
+	}
+
+	private void publishAnomalies(List<AnomalyDto> anomalies) {
+
+		if (!anomalies.isEmpty()) {
+
+			anomalyPublisher.publishAll(anomalies);
+		}
 	}
 
 	private static double p99FromMillis(

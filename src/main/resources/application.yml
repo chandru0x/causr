@@ -1,6 +1,9 @@
 spring:
   kafka:
     bootstrap-servers: 100.74.24.124:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     consumer:
       group-id: log-group
       auto-offset-reset: earliest
@@ -15,6 +18,7 @@ spring:
 #   /topic/metrics        — JSON MetricsDto (fleet aggregate, ~1 Hz)
 #   /topic/fleet-services — JSON FleetServicesDto (per-service table, ~1 Hz)
 #   /topic/host-metrics   — JSON HostMetricsDto (from metrics.raw OTLP)
+#   /topic/anomalies      — JSON AnomalyDto (rule engine, ~1 Hz + host metrics)
 
 server:
   port: 8080
@@ -28,3 +32,15 @@ causr:
   kafka:
     topics:
       metrics-raw: metrics.raw
+      logs-anomalies: logs.anomalies
+pagerduty:
+     enabled: true
+     url: 'https://events.pagerduty.com/v2/enqueue'
+     routing-key: 'your-routing-key'
+     threshold: 80
+     connect-timeout-ms: 3000
+     read-timeout-ms: 500     
+slack:
+     enabled: true
+     webhook-url: ${SLACK_WEBHOOK_URL}
+     dashboard-url: 'https://causr.netlify.app/alerts'

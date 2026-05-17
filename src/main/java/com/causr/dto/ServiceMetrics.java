@@ -14,6 +14,9 @@ public class ServiceMetrics {
 
 	private AtomicLong activeIncidents = new AtomicLong();
 
+	/** Wall-clock ms of the most recent log line for this service. */
+	private AtomicLong lastLogTimestampMs = new AtomicLong(0L);
+
 	public AtomicLong getTotalRequests() {
 		return totalRequests;
 	}
@@ -44,5 +47,13 @@ public class ServiceMetrics {
 
 	public void setActiveIncidents(AtomicLong activeIncidents) {
 		this.activeIncidents = activeIncidents;
+	}
+
+	public AtomicLong getLastLogTimestampMs() {
+		return lastLogTimestampMs;
+	}
+
+	public void setLastLogTimestampMs(AtomicLong lastLogTimestampMs) {
+		this.lastLogTimestampMs = lastLogTimestampMs;
 	}
 }

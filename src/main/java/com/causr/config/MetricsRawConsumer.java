@@ -7,6 +7,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.causr.dto.HostMetricsDto;
+import com.causr.service.AnomalyEngine;
+import com.causr.service.AnomalyPublisher;
 import com.causr.service.OtlHostMetricsMapper;
 
 import io.opentelemetry.proto.metrics.v1.MetricsData;
@@ -22,12 +24,20 @@ public class MetricsRawConsumer {
 
 	private final OtlHostMetricsMapper otlHostMetricsMapper;
 
+	private final AnomalyEngine anomalyEngine;
+
+	private final AnomalyPublisher anomalyPublisher;
+
 	public MetricsRawConsumer(
 			SimpMessagingTemplate messagingTemplate,
-			OtlHostMetricsMapper otlHostMetricsMapper) {
+			OtlHostMetricsMapper otlHostMetricsMapper,
+			AnomalyEngine anomalyEngine,
+			AnomalyPublisher anomalyPublisher) {
 
 		this.messagingTemplate = messagingTemplate;
 		this.otlHostMetricsMapper = otlHostMetricsMapper;
+		this.anomalyEngine = anomalyEngine;
+		this.anomalyPublisher = anomalyPublisher;
 	}
 
 	@KafkaListener(topics = "${causr.kafka.topics.metrics-raw:metrics.raw}")
@@ -43,7 +53,10 @@ public class MetricsRawConsumer {
 					DESTINATION_HOST_METRICS,
 					dto
 			);
-			System.out.print(metricsData);
+
+			anomalyPublisher.publishAll(
+					anomalyEngine.detectHost(dto)
+			);
 
 		} catch (Exception e) {
 
