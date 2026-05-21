@@ -1,0 +1,159 @@
+.obs-infra {
+  border-radius: var(--lun-radius);
+  border: 1px solid var(--lun-border);
+  background: var(--lun-glass);
+  backdrop-filter: blur(var(--lun-blur));
+  padding: 14px 16px;
+}
+
+.obs-infra__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.obs-infra__title {
+  font-family: var(--lun-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lun-muted-fg);
+}
+
+.obs-infra__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.obs-infra__tag {
+  font-family: var(--lun-font-mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: var(--lun-radius-pill);
+  border: 1px solid var(--lun-border);
+  color: var(--lun-muted-fg);
+}
+
+.obs-infra__note {
+  font-family: var(--lun-font-mono);
+  font-size: 11px;
+  color: var(--lun-muted-fg);
+  margin: 0 0 10px;
+}
+
+.obs-infra__note--muted {
+  opacity: 0.85;
+}
+
+/* Host metrics grid (aligned with Pencil “Infrastructure monitoring layer” gauge rows). */
+.obs-infra__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .obs-infra__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .obs-infra__metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+.obs-infra__metric {
+  border-radius: var(--lun-radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 12px 14px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+}
+
+.obs-infra__metric-label {
+  font-family: var(--lun-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lun-muted-fg);
+  margin-bottom: 6px;
+}
+
+.obs-infra__metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.obs-infra__metric-hint {
+  margin-top: 6px;
+  font-family: var(--lun-font-mono);
+  font-size: 10px;
+  color: var(--lun-muted-fg);
+  line-height: 1.35;
+}
+
+.obs-infra__metric-track {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.obs-infra__metric-fill {
+  height: 100%;
+  border-radius: inherit;
+  min-width: 4px;
+  transition: width 0.35s ease;
+}
+
+/* Accent strokes (Pencil-inspired, Lunaris glass base). */
+.obs-infra__metric--cpu {
+  border-color: rgba(249, 115, 22, 0.42);
+}
+.obs-infra__metric--cpu .obs-infra__metric-fill {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.obs-infra__metric--mem {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.obs-infra__metric--disk {
+  border-color: rgba(251, 113, 133, 0.42);
+}
+.obs-infra__metric--disk .obs-infra__metric-fill {
+  background: linear-gradient(90deg, #fb7185, #f43f5e);
+}
+
+.obs-infra__metric--net {
+  border-color: rgba(34, 211, 238, 0.38);
+}
+
+.obs-infra__metric--load {
+  border-color: rgba(167, 139, 250, 0.42);
+}
+
+.obs-infra__metric--proc {
+  border-color: rgba(45, 212, 191, 0.38);
+}
+
+.obs-infra__metric--fs {
+  border-color: rgba(251, 191, 36, 0.42);
+}
+.obs-infra__metric--fs .obs-infra__metric-fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.obs-infra__metric--paging {
+  border-color: rgba(192, 132, 252, 0.42);
+}

@@ -1,0 +1,57 @@
+/**
+ * Lunaris / Pencil design tokens (dark). Aligned to pencil-lunaris.pen variables.
+ */
+:root,
+[data-theme='lunaris'] {
+  --lun-bg: #111111;
+  --lun-bg-elevated: #141416;
+  --lun-card: #1a1a1a;
+  --lun-border: #2e2e2e;
+  --lun-border-glow: rgba(255, 132, 0, 0.22);
+  --lun-foreground: #ffffff;
+  --lun-muted: #2e2e2e;
+  --lun-muted-fg: #b8b9b6;
+  --lun-primary: #ff8400;
+  --lun-primary-fg: #111111;
+  --lun-sidebar: #18181b;
+  --lun-sidebar-fg: #fafafa;
+  --lun-sidebar-muted: #71717a;
+  --lun-success-bg: #222924;
+  --lun-success-fg: #b6ffce;
+  --lun-warning-bg: #291c0f;
+  --lun-warning-fg: #ff8400;
+  --lun-error-bg: #24100b;
+  --lun-error-fg: #ff5c33;
+  --lun-info-bg: #222229;
+  --lun-info-fg: #b2b2ff;
+  --lun-glass: rgba(26, 26, 26, 0.72);
+  --lun-glass-strong: rgba(22, 22, 24, 0.88);
+  --lun-blur: 16px;
+  --lun-radius: 16px;
+  --lun-radius-sm: 10px;
+  --lun-radius-pill: 999px;
+  --lun-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --lun-font-sans: 'Geist Sans', system-ui, sans-serif;
+  --lun-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  --lun-mesh-1: radial-gradient(ellipse 120% 80% at 10% 0%, rgba(255, 132, 0, 0.12), transparent 55%);
+  --lun-mesh-2: radial-gradient(ellipse 90% 60% at 90% 20%, rgba(178, 178, 255, 0.08), transparent 50%);
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
