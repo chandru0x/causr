@@ -1,0 +1,12 @@
+clickhouse:
+  url: jdbc:clickhouse://localhost:8123/observability?compress=0
+  username: default
+  password: ''
+
+app:
+  log-generator:
+    enabled: false
+  anomalies:
+    kafka-topic: anomaly-alerts
+    redis-channel-prefix: anomaly
+    kafka-consumer-enabled: false
