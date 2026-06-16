@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchSummary } from '../api/bff';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { AnomaliesIcon } from '../components/icons';
+import { PageTitle } from '../components/PageTitle';
 import type { AnomalyRow } from '../types/dashboard';
 
 const POLL_MS = 30_000;
@@ -40,7 +42,7 @@ export function AnomaliesPage() {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-title">Anomalies</h1>
+        <PageTitle icon={<AnomaliesIcon width={18} height={18} />} title="Anomalies" />
         <button type="button" className="btn-refresh" onClick={() => void load()}>
           Refresh
         </button>

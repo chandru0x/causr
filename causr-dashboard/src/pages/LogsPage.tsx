@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchRecentLogs } from '../api/processor';
 import { DataTable } from '../components/DataTable';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { LogsIcon } from '../components/icons';
+import { PageTitle } from '../components/PageTitle';
 import type { LogRow } from '../types/dashboard';
 
 const POLL_MS = 2000;
@@ -48,7 +50,7 @@ export function LogsPage() {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-title">Logs</h1>
+        <PageTitle icon={<LogsIcon width={18} height={18} />} title="Logs" />
         <span className="page-meta">poll {POLL_MS / 1000}s · {filtered.length} rows</span>
       </div>
 

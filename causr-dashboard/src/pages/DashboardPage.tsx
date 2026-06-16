@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchSummary } from '../api/bff';
 import { DataTable } from '../components/DataTable';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { DashboardIcon, ServiceHealthIcon, TopErrorsIcon } from '../components/icons';
 import { KpiStrip } from '../components/KpiStrip';
+import { PageTitle } from '../components/PageTitle';
 import { StatusBadge } from '../components/StatusBadge';
 import type { DashboardSummary, TopErrorRow } from '../types/dashboard';
 
@@ -42,7 +44,7 @@ export function DashboardPage() {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
+        <PageTitle icon={<DashboardIcon width={18} height={18} />} title="Dashboard" />
         {summary?.generatedAt && (
           <span className="page-meta">{summary.generatedAt}</span>
         )}
@@ -64,7 +66,10 @@ export function DashboardPage() {
       )}
 
       <div className="panel">
-        <div className="panel-head">Service health</div>
+        <div className="panel-head">
+          <ServiceHealthIcon />
+          <span>Service health</span>
+        </div>
         <DataTable
           rows={summary?.serviceHealth ?? []}
           rowKey={(r) => String(r.service_name ?? Math.random())}
@@ -100,7 +105,10 @@ export function DashboardPage() {
       </div>
 
       <div className="panel">
-        <div className="panel-head">Top errors (30m)</div>
+        <div className="panel-head">
+          <TopErrorsIcon />
+          <span>Top errors (30m)</span>
+        </div>
         <DataTable<TopErrorRow>
           rows={topErrors}
           rowKey={(r, i) => `${r.service_name}-${i}`}
