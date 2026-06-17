@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchSummary } from '../api/bff';
+import { AnomalyScoreBadge } from '../components/AnomalyScoreBadge';
 import { DataTable } from '../components/DataTable';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { DashboardIcon, ServiceHealthIcon, TopErrorsIcon } from '../components/icons';
+import { AnomaliesIcon, DashboardIcon, ServiceHealthIcon, TopErrorsIcon } from '../components/icons';
 import { KpiStrip } from '../components/KpiStrip';
 import { PageTitle } from '../components/PageTitle';
 import { StatusBadge } from '../components/StatusBadge';
-import type { DashboardSummary, TopErrorRow } from '../types/dashboard';
+import type { AnomalyRow, DashboardSummary, TopErrorRow } from '../types/dashboard';
+import { formatWindowRange } from '../utils/anomaly';
 
 const POLL_MS = 15_000;
 
@@ -40,6 +43,9 @@ export function DashboardPage() {
   }, [load]);
 
   const topErrors = (summary?.topErrors ?? []).slice(0, 10);
+  const recentAnomalies = [...(summary?.anomalies ?? [])]
+    .sort((a, b) => Number(a.anomaly_score ?? 0) - Number(b.anomaly_score ?? 0))
+    .slice(0, 5);
 
   return (
     <>
@@ -133,6 +139,38 @@ export function DashboardPage() {
               render: (r) => (
                 <span className={trendClass(r.trend)}>{r.trend ?? '—'}</span>
               ),
+            },
+          ]}
+        />
+      </div>
+
+      <div className="panel">
+        <div className="panel-head panel-head-split">
+          <span className="panel-head-title">
+            <AnomaliesIcon />
+            <span>Recent anomalies (1h)</span>
+          </span>
+          <Link className="panel-head-link" to="/anomalies">
+            View all
+          </Link>
+        </div>
+        <DataTable<AnomalyRow>
+          rows={recentAnomalies}
+          rowKey={(r, i) => String(r.id ?? i)}
+          emptyMessage="No anomalies in the last hour"
+          columns={[
+            { key: 'svc', header: 'Service', render: (r) => r.service_name ?? '—' },
+            { key: 'env', header: 'Env', render: (r) => r.environment ?? '—' },
+            {
+              key: 'score',
+              header: 'Score',
+              render: (r) => <AnomalyScoreBadge score={Number(r.anomaly_score)} />,
+            },
+            {
+              key: 'window',
+              header: 'Window',
+              className: 'mono truncate',
+              render: (r) => formatWindowRange(r.window_start, r.window_end),
             },
           ]}
         />

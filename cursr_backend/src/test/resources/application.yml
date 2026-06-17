@@ -10,3 +10,8 @@ app:
     kafka-topic: anomaly-alerts
     redis-channel-prefix: anomaly
     kafka-consumer-enabled: false
+  slack:
+    enabled: false
+    webhook-url: ''
+    dashboard-base-url: http://localhost:5173
+    dedupe-window-minutes: 5

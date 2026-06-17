@@ -98,6 +98,32 @@ services:
       - /init.sql
     restart: 'no'
 
+  ai-service:
+    build:
+      context: ./log-processor-service/ai_service
+      dockerfile: Dockerfile
+    container_name: ai-service
+    depends_on:
+      clickhouse-init:
+        condition: service_completed_successfully
+    ports:
+      - '8000:8000'
+      - '50051:50051'
+    environment:
+      CH_HOST: clickhouse
+      CH_PORT: '8123'
+      CH_DATABASE: observability
+      CH_USER: default
+      CH_PASSWORD: ''
+      HTTP_PORT: '8000'
+      GRPC_PORT: '50051'
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.96.0
     container_name: otel-collector

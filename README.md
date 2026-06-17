@@ -17,11 +17,13 @@ Monorepo for an observability and incident-intelligence platform: OTLP telemetry
 
 ## Quick start: infrastructure
 
-Start Redis, Kafka (with topics), ClickHouse (with schema), and OpenTelemetry Collector:
+Start Redis, Kafka (with topics), ClickHouse (with schema), OpenTelemetry Collector, and **AI anomaly scorer**:
 
 ```bash
 docker compose up -d
 ```
+
+Includes `ai-service` on ports **8000** (HTTP clustering) and **50051** (gRPC scoring).
 
 ### Verify
 
@@ -55,13 +57,13 @@ Host JVM apps connect to Kafka at **`localhost:29092`**. Containers use **`kafka
 After infrastructure is healthy, start services in order:
 
 ```bash
-# 1. Log processor (consumes Kafka, writes ClickHouse)
-cd log-processor-service && mvn spring-boot:run
+# 1. Log processor (use dev profile for local AI anomaly scoring)
+cd log-processor-service && SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 
 # 2. Log sender (OTLP → collector → Kafka → ClickHouse)
 cd log-sender-backend && mvn spring-boot:run
 
-# 3. Dashboard BFF
+# 3. Dashboard BFF (enable Slack with -Dapp.slack.enabled=true)
 cd cursr_backend && mvn spring-boot:run
 
 # 4. Dev dashboard UI (optional)
@@ -94,6 +96,41 @@ Environment variables:
 
 - `VITE_BFF_API_BASE` — default `http://localhost:8090`
 - `VITE_PROCESSOR_API_BASE` — default `http://localhost:8080`
+
+### End-to-end anomaly detection + Slack
+
+**Detection flow:** 30s Kafka Streams windows → `ai-service` gRPC (IsolationForest) → `observability.anomalies` + Kafka `anomaly-alerts` → `cursr_backend` → Redis/WebSocket + optional Slack.
+
+Use the **`dev` Spring profile** on log-processor so AI scoring runs without 7 days of `service_metrics` history:
+
+```bash
+cd log-processor-service && SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+```
+
+**Slack Incoming Webhook** (alert-only, no RCA):
+
+1. Create an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack workspace.
+2. Export the URL and enable Slack in the BFF:
+
+```bash
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+cd cursr_backend && mvn spring-boot:run -Dapp.slack.enabled=true
+```
+
+Dedupe: one Slack message per `(tenant, service, environment)` every 5 minutes (configurable via `app.slack.dedupe-window-minutes`).
+
+**Smoke test:**
+
+```bash
+# Manual anomaly (requires dev profile on processor)
+curl -X POST 'http://localhost:8080/api/dev/emit-anomaly?serviceName=payment-service&environment=staging'
+
+# Dashboard anomalies slice
+curl -s http://localhost:8090/api/dashboard/summary | jq '.anomalies | length'
+
+# ClickHouse
+curl 'http://localhost:8123/?query=SELECT service_name,anomaly_score FROM observability.anomalies ORDER BY created_at DESC LIMIT 5'
+```
 
 ### End-to-end smoke test
 

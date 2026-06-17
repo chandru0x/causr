@@ -136,6 +136,7 @@ docker compose up -d
 | `redis` | redis:7-alpine | 6379 | Dashboard cache + pub/sub |
 | `clickhouse` | clickhouse-server:24.3 | 8123, 9000 | Analytics store |
 | `clickhouse-init` | (one-shot) | — | Applies `infra/clickhouse/init.sql` |
+| `ai-service` | built from `log-processor-service/ai_service` | 8000, **50051** | Drain3 HTTP + IsolationForest gRPC scorer |
 | `otel-collector` | otel-collector-contrib:0.96.0 | 4317, 4318 | OTLP → Kafka |
 
 ### Kafka topics
@@ -157,6 +158,7 @@ Created by `infra/kafka/create-topics.sh`.
 | Redis | `localhost:6379` |
 | ClickHouse HTTP/JDBC | `localhost:8123/observability` |
 | OTel Collector | `localhost:4318` (HTTP), `localhost:4317` (gRPC) |
+| AI scorer | `localhost:50051` (gRPC), `localhost:8000` (HTTP) |
 
 See [`.env.example`](.env.example) for optional overrides.
 
@@ -362,6 +364,76 @@ Expected after healthy ingest:
 
 ---
 
+## End-to-end anomaly detection + Slack
+
+### Detection pipeline
+
+```mermaid
+sequenceDiagram
+  participant Processor as log-processor-service
+  participant AI as ai-service
+  participant CH as ClickHouse
+  participant Kafka as anomaly-alerts
+  participant BFF as cursr_backend
+  participant Slack as Slack_Webhook
+
+  Processor->>CH: service_metrics every 30s window
+  Processor->>AI: gRPC ScoreBatch
+  AI-->>Processor: is_anomaly + score
+  Processor->>CH: INSERT anomalies
+  Processor->>Kafka: AnomalyKafkaMessage JSON
+  Kafka->>BFF: AnomalyKafkaListener
+  BFF->>Redis: pub/sub for WebSocket
+  BFF->>Slack: POST Incoming Webhook
+```
+
+| Layer | Component | Notes |
+|-------|-----------|-------|
+| Per-log EWMA | `EwmaScorer` | `anomaly_score` on `logs_hot`; affects HOT sampling |
+| Window AI | `ServiceMetricsWindowHandler` + `ai-service` | 30s windows; IsolationForest (`is_anomaly` when score &lt; -0.4) |
+| Storage | `observability.anomalies` | Dashboard Anomalies page + summary API |
+| Alert bus | Kafka `anomaly-alerts` | Consumed by `cursr_backend` |
+| Realtime UI | Redis → WebSocket `/topic/anomalies/{tenant}` | Optional; UI currently polls |
+| Slack | `AnomalySlackNotifier` | Incoming Webhook; dedupe per service+env |
+
+### Local dev requirements
+
+1. `docker compose up -d` — includes **`ai-service`**
+2. Log processor with **`SPRING_PROFILES_ACTIVE=dev`** — sets `bypass-history-gate: true` and enables `POST /api/dev/emit-anomaly` ([`application-dev.yml`](log-processor-service/src/main/resources/application-dev.yml))
+3. Without dev profile, AI scoring waits for **7 days** of `service_metrics` history ([`ServiceMetricsHistoryChecker`](log-processor-service/src/main/java/com/example/logprocessor/streams/ServiceMetricsHistoryChecker.java))
+
+### Slack configuration (`cursr_backend`)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `app.slack.enabled` | `false` | Master switch |
+| `app.slack.webhook-url` | `${SLACK_WEBHOOK_URL}` | Incoming Webhook URL |
+| `app.slack.dashboard-base-url` | `http://localhost:5173` | Link in Slack message |
+| `app.slack.dedupe-window-minutes` | `5` | Suppress repeat alerts per tenant/service/env |
+
+Create a webhook: Slack workspace → Apps → Incoming Webhooks. Never commit the URL; use `.env` or shell export.
+
+```bash
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+cd cursr_backend && mvn spring-boot:run -Dapp.slack.enabled=true
+```
+
+### Smoke test
+
+```bash
+docker compose up -d
+cd log-processor-service && SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+cd log-sender-backend && mvn spring-boot:run
+export SLACK_WEBHOOK_URL=... && cd cursr_backend && mvn spring-boot:run -Dapp.slack.enabled=true
+
+curl -X POST 'http://localhost:8080/api/dev/emit-anomaly?serviceName=payment-service&environment=staging'
+curl -s http://localhost:8090/api/dashboard/summary | jq '.anomalies[0]'
+```
+
+RCA (`rca_text`) is **not** generated in this phase — dashboard shows `(no RCA yet)` until a future LLM worker is added.
+
+---
+
 ## Local development workflow
 
 ### 1. Start infrastructure
@@ -529,9 +601,15 @@ DROP TABLE IF EXISTS observability.log_clusters;
 
 Ensure log-processor `CorsConfig` is active and you're accessing the UI from `http://localhost:5173`.
 
-### Anomalies always empty
+### Anomalies empty or no Slack message
 
-Expected until AI window scoring produces rows with `is_anomaly = 1` in ClickHouse. Anomaly pipeline requires sufficient `service_metrics` history and scorer configuration.
+| Symptom | Check |
+|---------|--------|
+| No `anomalies` rows | Is `ai-service` up? (`docker compose ps`) Processor on **dev** profile? gRPC logs at WARN in processor? |
+| `emit-anomaly` returns 404 | `SPRING_PROFILES_ACTIVE=dev` (enables dev endpoints) |
+| Dashboard empty but CH has rows | Anomalies query uses last **1 hour** window; check `created_at` |
+| No Slack post | `app.slack.enabled=true` and `SLACK_WEBHOOK_URL` set; check BFF logs for dedupe/suppression |
+| AI gRPC errors | `localhost:50051` reachable; restart `ai-service` container |
 
 ---
 
@@ -574,4 +652,4 @@ cd causr-dashboard && npm run build
 
 ---
 
-*Last updated: June 2026 — reflects dashboard data pipeline fixes and local Docker stack alignment.*
+*Last updated: June 2026 — includes E2E anomaly detection, Slack alerts, and dashboard data pipeline fixes.*

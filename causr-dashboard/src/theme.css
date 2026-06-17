@@ -145,6 +145,13 @@ input {
   margin-bottom: 8px;
 }
 
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .page-title-row {
   display: flex;
   align-items: center;
@@ -193,6 +200,29 @@ input {
 .panel-head svg {
   flex-shrink: 0;
   opacity: 0.75;
+}
+
+.panel-head-split {
+  justify-content: space-between;
+}
+
+.panel-head-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-head-link {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.panel-head-link:hover {
+  text-decoration: underline;
 }
 
 /* kpi strip */
@@ -352,11 +382,114 @@ input {
   border: 1px solid var(--border);
   background: var(--surface);
   margin-bottom: 4px;
+}
+
+.anomaly-item-open {
+  border-color: var(--accent);
+}
+
+.anomaly-item-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
+  font: inherit;
+}
+
+.anomaly-item-button:hover {
+  background: var(--surface-2);
 }
 
 .anomaly-item:hover {
+  background: var(--surface);
+}
+
+.anomaly-item-service {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.anomaly-item-env {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.anomaly-score-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+.anomaly-score-critical {
+  color: var(--err);
+  background: rgba(229, 83, 75, 0.15);
+}
+
+.anomaly-score-warning {
+  color: var(--warn);
+  background: rgba(201, 162, 39, 0.15);
+}
+
+.anomaly-score-normal {
+  color: var(--muted);
   background: var(--surface-2);
+}
+
+.anomaly-empty {
+  padding: 12px;
+}
+
+.anomaly-detail {
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  background: var(--bg);
+}
+
+.anomaly-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+
+.anomaly-detail-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.anomaly-detail-id {
+  word-break: break-all;
+}
+
+.anomaly-detail-section {
+  margin-top: 10px;
+}
+
+.anomaly-features {
+  margin-bottom: 10px;
+}
+
+.anomaly-features-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 11px;
+  margin-top: 4px;
 }
 
 .anomaly-item-head {

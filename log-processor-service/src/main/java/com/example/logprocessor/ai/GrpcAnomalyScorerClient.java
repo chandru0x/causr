@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.example.logprocessor.config.AiProperties;
@@ -14,6 +16,8 @@ import jakarta.annotation.PreDestroy;
 
 @Component
 public class GrpcAnomalyScorerClient {
+
+  private static final Logger log = LoggerFactory.getLogger(GrpcAnomalyScorerClient.class);
 
   private final ManagedChannel channel;
   private final AnomalyScorerGrpc.AnomalyScorerBlockingStub stub;
@@ -39,6 +43,7 @@ public class GrpcAnomalyScorerClient {
       ScoreBatchResponse res = stub.withDeadlineAfter(5, TimeUnit.SECONDS).scoreBatch(req);
       return Optional.of(res);
     } catch (Exception e) {
+      log.warn("AI gRPC scoreBatch failed ({} vectors): {}", vectors.size(), e.getMessage());
       return Optional.empty();
     }
   }

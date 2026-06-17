@@ -1,6 +1,5 @@
 package com.cursr.backend.anomaly;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,32 +20,42 @@ public class AnomalyKafkaListener {
   private final StringRedisTemplate stringRedisTemplate;
   private final ObjectMapper objectMapper;
   private final String redisChannelPrefix;
+  private final AnomalySlackNotifier anomalySlackNotifier;
 
   public AnomalyKafkaListener(
       StringRedisTemplate stringRedisTemplate,
       ObjectMapper objectMapper,
-      @Value("${app.anomalies.redis-channel-prefix}") String redisChannelPrefix) {
+      @Value("${app.anomalies.redis-channel-prefix}") String redisChannelPrefix,
+      AnomalySlackNotifier anomalySlackNotifier) {
     this.stringRedisTemplate = stringRedisTemplate;
     this.objectMapper = objectMapper;
     this.redisChannelPrefix = redisChannelPrefix;
+    this.anomalySlackNotifier = anomalySlackNotifier;
   }
 
   @KafkaListener(topics = "${app.anomalies.kafka-topic}", groupId = "${spring.kafka.consumer.group-id}")
   public void consumeAnomaly(String json) {
+    AnomalyAlertEvent event = null;
     try {
-      JsonNode node = objectMapper.readTree(json);
-      String tenantId = resolveTenantId(node);
+      event = objectMapper.readValue(json, AnomalyAlertEvent.class);
+      String tenantId = resolveTenantId(event);
       String channel = redisChannelPrefix + ":" + tenantId;
       stringRedisTemplate.convertAndSend(channel, json);
     } catch (Exception e) {
       log.warn("Anomaly Kafka message skipped: {}", e.getMessage());
+      return;
+    }
+
+    try {
+      anomalySlackNotifier.notifyIfEnabled(event);
+    } catch (Exception e) {
+      log.warn("Slack notify after anomaly Kafka message failed: {}", e.getMessage());
     }
   }
 
-  private String resolveTenantId(JsonNode node) {
-    JsonNode tenantId = node.get("tenantId");
-    if (tenantId != null && tenantId.isTextual() && !tenantId.asText().isBlank()) {
-      return tenantId.asText();
+  private String resolveTenantId(AnomalyAlertEvent event) {
+    if (event.tenantId() != null && !event.tenantId().isBlank()) {
+      return event.tenantId();
     }
     return "default";
   }

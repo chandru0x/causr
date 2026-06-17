@@ -45,11 +45,23 @@ export interface AnomalyRow {
   id?: string;
   window_start?: string;
   window_end?: string;
+  tenant_id?: string;
   service_name?: string;
   environment?: string;
   anomaly_score?: number;
-  rca_text?: string;
   is_anomaly?: number;
+  rca_text?: string;
+  rca_generated_at?: string;
+  feature_json?: string;
+  created_at?: string;
+}
+
+export interface AnomalyFeatures {
+  error_rate?: number;
+  log_volume?: number;
+  p99_latency_ms?: number;
+  unique_error_types?: number;
+  new_error_types?: number;
 }
 
 export interface DashboardSummary {

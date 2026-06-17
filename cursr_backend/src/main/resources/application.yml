@@ -52,3 +52,8 @@ app:
     redis-channel-prefix: anomaly
     # Set false to run without Kafka (dashboard REST + Redis/WebSocket still work).
     kafka-consumer-enabled: true
+  slack:
+    enabled: true
+    webhook-url: ${SLACK_WEBHOOK_URL:}
+    dashboard-base-url: http://localhost:5173
+    dedupe-window-minutes: 5

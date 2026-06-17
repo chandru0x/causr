@@ -327,7 +327,7 @@ public final class DashboardSql {
         rca_text,
         if(isNull(a.rca_generated_at), '', toString(a.rca_generated_at)) AS rca_generated_at,
         feature_json,
-        toString(created_at) AS created_at
+        toString(a.created_at) AS created_at
     FROM observability.anomalies a
     WHERE a.window_start >= now() - INTERVAL 1 HOUR
     ORDER BY a.window_start DESC
@@ -347,7 +347,7 @@ public final class DashboardSql {
         rca_text,
         if(isNull(a.rca_generated_at), '', toString(a.rca_generated_at)) AS rca_generated_at,
         feature_json,
-        toString(created_at) AS created_at
+        toString(a.created_at) AS created_at
     FROM observability.anomalies a
     WHERE a.id = toUUID(?)
     LIMIT 1
@@ -377,13 +377,13 @@ public final class DashboardSql {
    */
   public static final String TIME_TO_DETECT_LAST_INCIDENT = """
     SELECT
-        toString(id) AS id,
-        toUInt32(greatest(0, dateDiff('second', window_start, created_at))) AS detect_seconds,
-        service_name,
-        toString(created_at) AS created_at
-    FROM observability.anomalies
-    WHERE is_anomaly = 1
-    ORDER BY created_at DESC
+        toString(a.id) AS id,
+        toUInt32(greatest(0, dateDiff('second', a.window_start, a.created_at))) AS detect_seconds,
+        a.service_name,
+        toString(a.created_at) AS created_at
+    FROM observability.anomalies a
+    WHERE a.is_anomaly = 1
+    ORDER BY a.created_at DESC
     LIMIT 1
     """;
 
