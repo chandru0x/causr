@@ -6,12 +6,14 @@ import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 public class ClickHouseConfig {
 
   @Bean
+  @Primary
   public DataSource clickHouseDataSource(
     @Value("${clickhouse.url}") String url,
     @Value("${clickhouse.username}") String username,
@@ -26,6 +28,7 @@ public class ClickHouseConfig {
   }
 
   @Bean
+  @Primary
   public JdbcTemplate jdbcTemplate(DataSource dataSource) {
     return new JdbcTemplate(dataSource);
   }

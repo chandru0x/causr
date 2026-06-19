@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: cursr-backend
+  flyway:
+    enabled: false
   data:
     redis:
       host: localhost
@@ -36,7 +38,15 @@ otel:
     otlp:
       endpoint: http://localhost:4317
 
+postgres:
+  url: jdbc:postgresql://localhost:5432/causr
+  username: causr
+  password: causr
+
 app:
+  andromedia:
+    base-url: http://localhost:8083
+    poll-interval-ms: 5000
   cors:
     allowed-origin: 'http://localhost:*'
   websocket:
