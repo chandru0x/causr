@@ -236,7 +236,9 @@ export function ServiceDetailPage() {
             </CardContent>
           </Card>
 
-          <InvestigationResultPanel result={investigation} loading={investigating} />
+          {(investigating || investigation) && (
+            <InvestigationResultPanel result={investigation} loading={investigating} />
+          )}
         </>
       )}
 

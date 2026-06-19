@@ -79,8 +79,12 @@ export function InvestigationResultPanel({
   }
 
   const sections = parseInvestigationDetails(result.details);
-  const referenceCount = result.metadata?.referenceCount;
-  const indexPath = result.metadata?.indexPath;
+  const referenceCount =
+    typeof result.metadata?.referenceCount === 'number'
+      ? result.metadata.referenceCount
+      : null;
+  const indexPath =
+    typeof result.metadata?.indexPath === 'string' ? result.metadata.indexPath : null;
 
   return (
     <div className={cn('space-y-4', compact && 'space-y-3')}>
