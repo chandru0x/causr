@@ -50,7 +50,7 @@ public final class OtlpStreamEventExtractor {
       for (ScopeLogs sl : rl.getScopeLogsList()) {
         for (LogRecord lr : sl.getLogRecordsList()) {
           StreamLogEvent ev = toEvent(tenant, service, environment, attrs, lr);
-          String groupKey = service + "#" + environment;
+          String groupKey = ev.serviceName() + "#" + ev.environment();
           out.add(KeyValue.pair(groupKey, ev));
         }
       }
@@ -67,10 +67,24 @@ public final class OtlpStreamEventExtractor {
     Map<String, String> map = new HashMap<>(resourceAttrs);
     putStringAttributes(map, lr.getAttributesList());
     OtlpLogAttributeSupport.normalizeHttpStatusCodeAlias(map);
+    String resolvedService = firstNonBlank(map.get(ATTR_SERVICE_NAME), service, "unknown");
+    String resolvedEnvironment =
+        firstNonBlank(map.get(ATTR_DEPLOYMENT_ENVIRONMENT), environment, "unknown");
+    String resolvedTenant = firstNonBlank(map.get(ATTR_TENANT_ID), tenant, "");
     boolean error = isError(lr, map);
     long latencyMs = OtlpLogAttributeSupport.latencyMsFromAttributes(map);
     String templateHash = templateHash(map, lr);
-    return new StreamLogEvent(tenant, service, environment, error, latencyMs, templateHash);
+    return new StreamLogEvent(
+        resolvedTenant, resolvedService, resolvedEnvironment, error, latencyMs, templateHash);
+  }
+
+  private static String firstNonBlank(String... values) {
+    for (String value : values) {
+      if (value != null && !value.isBlank()) {
+        return value;
+      }
+    }
+    return "";
   }
 
   private static boolean isError(LogRecord lr, Map<String, String> attrs) {

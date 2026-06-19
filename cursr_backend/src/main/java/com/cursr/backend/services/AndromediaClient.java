@@ -7,6 +7,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -28,14 +29,26 @@ public class AndromediaClient {
     this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
   }
 
-  public Optional<IndexJobResponse> startIndex(String service, String repo, String branch, boolean embed) {
+  public Optional<IndexJobResponse> startIndex(
+      String service,
+      String repo,
+      String branch,
+      String localPath,
+      String repoSubpath,
+      boolean embed) {
     try {
-      Map<String, Object> body =
-          Map.of(
-              "service", service,
-              "repo", repo,
-              "branch", branch == null || branch.isBlank() ? "main" : branch,
-              "embed", embed);
+      Map<String, Object> body = new LinkedHashMap<>();
+      body.put("service", service);
+      body.put("embed", embed);
+      if (localPath != null && !localPath.isBlank()) {
+        body.put("localPath", localPath);
+      } else {
+        body.put("repo", repo);
+        body.put("branch", branch == null || branch.isBlank() ? "main" : branch);
+        if (repoSubpath != null && !repoSubpath.isBlank()) {
+          body.put("repoSubpath", repoSubpath);
+        }
+      }
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(URI.create(properties.normalizedBaseUrl() + "/api/v1/index"))

@@ -6,8 +6,11 @@ import java.util.Map;
 public record ServiceRecord(
     String id,
     String serviceName,
+    String indexSource,
     String repoUrl,
     String branch,
+    String localPath,
+    String repoSubpath,
     String status,
     Instant indexedAt,
     Map<String, Object> indexStats,

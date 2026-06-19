@@ -47,16 +47,42 @@ public class ServicesController {
     if (serviceName == null || serviceName.isBlank()) {
       return ResponseEntity.badRequest().build();
     }
-    String repoUrl = request.repoUrl().trim();
-    if (repoUrl.isEmpty()) {
+    String indexSource =
+        request.indexSource() == null || request.indexSource().isBlank()
+            ? "git"
+            : request.indexSource().trim().toLowerCase();
+    if ("local".equals(indexSource)) {
+      if (request.localPath() == null || request.localPath().isBlank()) {
+        return ResponseEntity.badRequest().build();
+      }
+    } else if (request.repoUrl() == null || request.repoUrl().isBlank()) {
       return ResponseEntity.badRequest().build();
+    } else {
+      indexSource = "git";
     }
+
     ServiceRecord saved =
-        serviceRegistryService.upsertRepository(
-            serviceName.trim(), repoUrl, request.branch(), ServiceStatus.INDEXING);
+        serviceRegistryService.upsertCodeSource(
+            serviceName.trim(),
+            indexSource,
+            request.repoUrl() != null ? request.repoUrl().trim() : null,
+            request.branch(),
+            request.localPath() != null ? request.localPath().trim() : null,
+            request.repoSubpath(),
+            ServiceStatus.INDEXING);
+
     Optional<AndromediaClient.IndexJobResponse> job =
-        andromediaClient.startIndex(
-            saved.serviceName(), repoUrl, saved.branch(), true);
+        "local".equals(indexSource)
+            ? andromediaClient.startIndex(
+                saved.serviceName(), null, null, saved.localPath(), null, true)
+            : andromediaClient.startIndex(
+                saved.serviceName(),
+                saved.repoUrl(),
+                saved.branch(),
+                null,
+                saved.repoSubpath(),
+                true);
+
     if (job.isPresent()) {
       serviceRegistryService.updateIndexJob(
           saved.serviceName(), job.get().jobId(), ServiceStatus.INDEXING);
@@ -82,12 +108,30 @@ public class ServicesController {
       return ResponseEntity.notFound().build();
     }
     ServiceRecord record = existing.get();
-    if (record.repoUrl() == null || record.repoUrl().isBlank()) {
+    String indexSource =
+        record.indexSource() != null && !record.indexSource().isBlank()
+            ? record.indexSource()
+            : "git";
+    if ("local".equals(indexSource)) {
+      if (record.localPath() == null || record.localPath().isBlank()) {
+        return ResponseEntity.badRequest().build();
+      }
+    } else if (record.repoUrl() == null || record.repoUrl().isBlank()) {
       return ResponseEntity.badRequest().build();
     }
+
     serviceRegistryService.updateIndexJob(record.serviceName(), null, ServiceStatus.INDEXING);
     Optional<AndromediaClient.IndexJobResponse> job =
-        andromediaClient.startIndex(record.serviceName(), record.repoUrl(), record.branch(), true);
+        "local".equals(indexSource)
+            ? andromediaClient.startIndex(
+                record.serviceName(), null, null, record.localPath(), null, true)
+            : andromediaClient.startIndex(
+                record.serviceName(),
+                record.repoUrl(),
+                record.branch(),
+                null,
+                record.repoSubpath(),
+                true);
     if (job.isEmpty()) {
       serviceRegistryService.updateIndexComplete(
           record.serviceName(),
@@ -113,9 +157,7 @@ public class ServicesController {
       return ResponseEntity.notFound().build();
     }
     ServiceRecord record = existing.get();
-    if (record.repoUrl() == null
-        || record.repoUrl().isBlank()
-        || !ServiceStatus.INDEXED.equals(record.status())) {
+    if (!ServiceStatus.INDEXED.equals(record.status())) {
       return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
     String query =

@@ -61,6 +61,23 @@ services:
       timeout: 3s
       retries: 5
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: causr
+      POSTGRES_USER: causr
+      POSTGRES_PASSWORD: causr
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U causr -d causr']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   clickhouse:
     image: clickhouse/clickhouse-server:24.3
     container_name: clickhouse
@@ -139,3 +156,4 @@ services:
 
 volumes:
   clickhouse-data:
+  postgres-data:

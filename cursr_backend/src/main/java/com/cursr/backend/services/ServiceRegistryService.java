@@ -38,18 +38,7 @@ public class ServiceRegistryService {
     for (String name : discovered) {
       ServiceRecord existing = registry.remove(name);
       if (existing != null) {
-        merged.add(new ServiceRecord(
-            existing.id(),
-            existing.serviceName(),
-            existing.repoUrl(),
-            existing.branch(),
-            existing.status(),
-            existing.indexedAt(),
-            existing.indexStats(),
-            existing.lastIndexJobId(),
-            existing.createdAt(),
-            existing.updatedAt(),
-            true));
+        merged.add(withDiscovered(existing, true));
       } else {
         merged.add(discoveredOnly(name));
       }
@@ -67,19 +56,7 @@ public class ServiceRegistryService {
     Optional<ServiceRecord> registry = findRegistry(serviceName);
     boolean discovered = discoverServiceNames().contains(serviceName);
     if (registry.isPresent()) {
-      ServiceRecord row = registry.get();
-      return Optional.of(new ServiceRecord(
-          row.id(),
-          row.serviceName(),
-          row.repoUrl(),
-          row.branch(),
-          row.status(),
-          row.indexedAt(),
-          row.indexStats(),
-          row.lastIndexJobId(),
-          row.createdAt(),
-          row.updatedAt(),
-          discovered));
+      return Optional.of(withDiscovered(registry.get(), discovered));
     }
     if (discovered) {
       return Optional.of(discoveredOnly(serviceName));
@@ -87,13 +64,26 @@ public class ServiceRegistryService {
     return Optional.empty();
   }
 
-  public ServiceRecord upsertRepository(String serviceName, String repoUrl, String branch, String status) {
+  public ServiceRecord upsertCodeSource(
+      String serviceName,
+      String indexSource,
+      String repoUrl,
+      String branch,
+      String localPath,
+      String repoSubpath,
+      String status) {
+    String normalizedSource = normalizeIndexSource(indexSource);
     List<Map<String, Object>> rows =
         postgresJdbcTemplate.queryForList(
             ServicesSql.UPSERT,
             serviceName,
-            repoUrl,
-            branch == null || branch.isBlank() ? "main" : branch.trim(),
+            normalizedSource,
+            "git".equals(normalizedSource) ? repoUrl : null,
+            "git".equals(normalizedSource)
+                ? (branch == null || branch.isBlank() ? "main" : branch.trim())
+                : "main",
+            "local".equals(normalizedSource) ? localPath : null,
+            "git".equals(normalizedSource) ? stringOrNull(repoSubpath) : null,
             status);
     return mapRow(rows.getFirst(), discoverServiceNames().contains(serviceName));
   }
@@ -161,8 +151,11 @@ public class ServiceRegistryService {
     return new ServiceRecord(
         null,
         serviceName,
+        "git",
         null,
         "main",
+        null,
+        null,
         ServiceStatus.DISCOVERED,
         null,
         Map.of(),
@@ -172,12 +165,35 @@ public class ServiceRegistryService {
         true);
   }
 
+  private ServiceRecord withDiscovered(ServiceRecord record, boolean discovered) {
+    return new ServiceRecord(
+        record.id(),
+        record.serviceName(),
+        record.indexSource(),
+        record.repoUrl(),
+        record.branch(),
+        record.localPath(),
+        record.repoSubpath(),
+        record.status(),
+        record.indexedAt(),
+        record.indexStats(),
+        record.lastIndexJobId(),
+        record.createdAt(),
+        record.updatedAt(),
+        discovered);
+  }
+
   private ServiceRecord mapRow(Map<String, Object> row, boolean discovered) {
     return new ServiceRecord(
         stringOrNull(row.get("id")),
         String.valueOf(row.get("service_name")),
+        stringOrNull(row.get("index_source")) != null
+            ? String.valueOf(row.get("index_source"))
+            : "git",
         stringOrNull(row.get("repo_url")),
         stringOrNull(row.get("branch")) != null ? String.valueOf(row.get("branch")) : "main",
+        stringOrNull(row.get("local_path")),
+        stringOrNull(row.get("repo_subpath")),
         String.valueOf(row.getOrDefault("status", ServiceStatus.DISCOVERED)),
         toInstant(row.get("indexed_at")),
         parseStats(row.get("index_stats")),
@@ -200,6 +216,17 @@ public class ServiceRegistryService {
     } catch (Exception ex) {
       return Map.of();
     }
+  }
+
+  private static String normalizeIndexSource(String indexSource) {
+    if (indexSource == null || indexSource.isBlank()) {
+      return "git";
+    }
+    String normalized = indexSource.trim().toLowerCase();
+    if (!"git".equals(normalized) && !"local".equals(normalized)) {
+      throw new IllegalArgumentException("indexSource must be git or local");
+    }
+    return normalized;
   }
 
   private static Instant toInstant(Object value) {

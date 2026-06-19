@@ -11,51 +11,65 @@ public final class ServicesSql {
       ORDER BY service_name
       """;
 
-  public static final String FIND_BY_NAME =
+  private static final String SELECT_COLUMNS =
       """
       SELECT id::text AS id,
              service_name,
+             index_source,
              repo_url,
              branch,
+             local_path,
+             repo_subpath,
              status,
              indexed_at,
              index_stats::text AS index_stats,
              last_index_job_id,
              created_at,
              updated_at
+      """;
+
+  public static final String FIND_BY_NAME =
+      SELECT_COLUMNS
+          + """
       FROM services
       WHERE service_name = ?
       """;
 
   public static final String FIND_ALL =
-      """
-      SELECT id::text AS id,
-             service_name,
-             repo_url,
-             branch,
-             status,
-             indexed_at,
-             index_stats::text AS index_stats,
-             last_index_job_id,
-             created_at,
-             updated_at
+      SELECT_COLUMNS
+          + """
       FROM services
       ORDER BY service_name
       """;
 
   public static final String UPSERT =
       """
-      INSERT INTO services (service_name, repo_url, branch, status, updated_at)
-      VALUES (?, ?, ?, ?, now())
+      INSERT INTO services (
+        service_name,
+        index_source,
+        repo_url,
+        branch,
+        local_path,
+        repo_subpath,
+        status,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, now())
       ON CONFLICT (service_name) DO UPDATE SET
+        index_source = EXCLUDED.index_source,
         repo_url = EXCLUDED.repo_url,
         branch = EXCLUDED.branch,
+        local_path = EXCLUDED.local_path,
+        repo_subpath = EXCLUDED.repo_subpath,
         status = EXCLUDED.status,
         updated_at = now()
       RETURNING id::text AS id,
                 service_name,
+                index_source,
                 repo_url,
                 branch,
+                local_path,
+                repo_subpath,
                 status,
                 indexed_at,
                 index_stats::text AS index_stats,
